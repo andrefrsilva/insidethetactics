@@ -1,0 +1,21 @@
+{
+   "name": "Inside The Tactics",
+   "short_name": "Inside The Tactics",
+   "description": "Plataforma profissional para gestão de equipas com gamificação e acesso externo.",
+   "start_url": ".",
+   "display": "standalone",
+   "background_color": "#0b1220",
+   "theme_color": "#0ea5e9",
+   "icons": [
+     {
+       "src": "https://i.postimg.cc/YCnVNP0h/image.png",
+       "sizes": "192x192",
+       "type": "image/png"
+     },
+     {
+       "src": "https://i.postimg.cc/YCnVNP0h/image.png",
+       "sizes": "512x512",
+       "type": "image/png"
+     }
+   ]
+ }
