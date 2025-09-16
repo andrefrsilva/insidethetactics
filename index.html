@@ -1,32 +1,23 @@
 <!doctype html>
 <html lang="pt">
 <head>
-  <!-- ===== META & SOCIAL ===== -->
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inside The Tactics</title>
   <meta name="theme-color" content="#0ea5e9" />
-  
-  <!-- PWA Manifest -->
   <link rel="manifest" href="https://raw.githubusercontent.com/andrefrsilva/insidethetactics/refs/heads/main/Manifest.json">
-  
-  <!-- Icons for various devices -->
   <link rel="icon" type="image/png" href="https://i.postimg.cc/YCnVNP0h/image.png">
   <link rel="apple-touch-icon" href="https://i.postimg.cc/YCnVNP0h/image.png">
-  
-  <!-- iOS specific meta tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Inside The Tactics">
-
   <meta property="og:title" content="Inside The Tactics">
   <meta property="og:description" content="Plataforma profissional para gestão de equipas com gamificação e acesso externo. *****">
   <meta property="og:image" content="https://i.postimg.cc/YCnVNP0h/image.png">
   <meta property="og:url" content="https://insidethetactics.app">
   <meta name="twitter:card" content="summary_large_image">
 
-  <!-- Tailwind (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -48,12 +39,10 @@
     }
   </script>
 
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 
-  <!-- Libraries -->
   <script defer src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/customParseFormat.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -98,7 +87,6 @@
   </style>
 </head>
 <body>
-  <!-- Loader -->
   <div id="loader" class="fixed inset-0 z-[60] grid place-items-center bg-[#0b1220]">
     <div class="text-center">
       <div class="mx-auto w-20 h-20 rounded-3xl border-2 border-white/10 grid place-items-center relative">
@@ -110,7 +98,6 @@
     </div>
   </div>
 
-  <!-- Login Modal -->
   <div id="loginModal" class="hidden fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm p-4">
     <div class="max-w-md mx-auto mt-16 glass-strong rounded-2xl p-6 shadow-xl">
       <div class="flex items-center gap-3 mb-4">
@@ -139,7 +126,6 @@
     </div>
   </div>
 
-  <!-- Header -->
   <header class="sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-white/5 bg-white/0">
     <div class="gradient-underline"></div>
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
@@ -153,9 +139,13 @@
         </div>
       </div>
 
-      <nav class="ml-auto overflow-x-auto nav-scroller">
+      <nav id="navWrap" class="ml-auto overflow-x-hidden">
         <ul id="menu" class="flex items-center gap-2 md:gap-3 min-w-max"></ul>
       </nav>
+
+      <button id="menuToggle" aria-label="Abrir menu" class="ml-auto btn hidden items-center gap-2 bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl px-3 py-2">
+        <svg data-lucide="menu" class="w-5 h-5"></svg><span class="hidden sm:inline text-sm">Menu</span>
+      </button>
     </div>
   </header>
 
@@ -170,10 +160,33 @@
     </div>
   </footer>
 
+  <div id="overlayMenu" class="hidden fixed inset-0 z-[65]">
+    <div class="absolute inset-0 bg-black/60" id="overlayBg"></div>
+    <div class="absolute right-3 top-3 sm:right-6 sm:top-6 w-[88vw] max-w-sm glass-strong rounded-2xl p-3 sm:p-4 shadow-2xl">
+      <div class="flex items-center justify-between mb-2">
+        <div class="font-display text-lg">Menu</div>
+        <button id="overlayClose" class="btn inline-flex items-center justify-center rounded-xl border border-white/15 px-2.5 py-2 hover:bg-white/10" aria-label="Fechar menu">
+          <svg data-lucide="x" class="w-4 h-4"></svg>
+        </button>
+      </div>
+      <div id="overlayMenuItems" class="grid gap-2"></div>
+    </div>
+  </div>
+
+  <div id="gamePickerOverlay" class="hidden fixed inset-0 z-[66]">
+    <div class="absolute inset-0 bg-black/60" id="gpBackdrop"></div>
+    <div class="absolute left-1/2 top-12 -translate-x-1/2 w-max max-w-[calc(100vw-2rem)] glass-strong rounded-2xl p-3 sm:p-4 shadow-2xl">
+      <div class="flex items-center justify-between gap-3 mb-2">
+        <div class="font-display text-lg truncate">Selecionar jogo</div>
+        <button id="gpClose" class="btn inline-flex items-center justify-center rounded-xl border border-white/15 px-2.5 py-2 hover:bg-white/10" aria-label="Fechar seleção">
+          <svg data-lucide="x" class="w-4 h-4"></svg>
+        </button>
+      </div>
+      <div id="gpList" class="max-h-[60vh] overflow-y-auto pr-1"></div>
+    </div>
+  </div>
+
   <script>
-    /* =========================
-       CONFIG & STATE
-    ========================== */
     const EXCEL_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTLT1g4vrloKXo6t6dYcrJMA-ULByWSaT4dutbDhv3dx2S_2dxWPyzsIn5wJgTsGAlLEHbCxUs1ZL1q/pub?output=xlsx";
     const STORAGE_KEY = "itt_login";
 
@@ -190,9 +203,6 @@
       arquivo: [],
     };
 
-    /* =========================
-       UTIL
-    ========================== */
     if (window.dayjs && window.dayjs_plugin_customParseFormat) {
       dayjs.extend(window.dayjs_plugin_customParseFormat);
     }
@@ -219,7 +229,6 @@
       return age;
     };
 
-    // PT formatters
     const PT_MONTHS_SHORT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
     const PT_MONTHS_LONG  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     const PT_WEEKDAYS     = ['Domingo','Segunda Feira','Terça Feira','Quarta Feira','Quinta Feira','Sexta Feira','Sábado'];
@@ -288,7 +297,6 @@
       throw new Error('Biblioteca XLSX não carregou');
     }
 
-    // GViz & CSV fallbacks
     async function fetchGVizSheet(sheet){
       const bust = Date.now();
       const base = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTLT1g4vrloKXo6t6dYcrJMA-ULByWSaT4dutbDhv3dx2S_2dxWPyzsIn5wJgTsGAlLEHbCxUs1ZL1q/gviz/tq";
@@ -347,14 +355,10 @@
       return { headers, rows: objs };
     }
 
-    /* =========================
-       EXCEL LOADING
-    ========================== */
     async function fetchExcelLatest(){
       const loaderText = document.getElementById('loaderText');
       loaderText.textContent = 'A descarregar a versão mais recente…';
 
-      // 1) SheetJS (preferido)
       try{
         await ensureXLSX();
         const resp = await fetch(`${EXCEL_URL}&ts=${Date.now()}`, { cache: 'no-store', mode: 'cors', redirect: 'follow' });
@@ -375,8 +379,6 @@
 
         const eqHeaderRows = XLSX.utils.sheet_to_json(shEquipa, { header: 1 });
         const eqHeaders = (eqHeaderRows && eqHeaderRows[0] ? eqHeaderRows[0] : []).filter(Boolean).map(h => h.toString());
-
-        // Ranking headers: tolera "Ranking:" e typo "Rahnking:"
         const rankingHeaders = eqHeaders.filter(h => /^\s*(ranking|rahnking)\s*:/i.test(h));
 
         const loginRows   = XLSX.utils.sheet_to_json(shLogin,   { defval: "" });
@@ -401,7 +403,6 @@
         console.warn('XLSX falhou, a tentar fallback GViz/CSV', err);
       }
 
-      // 2) GViz
       loaderText.textContent = 'A obter dados (fallback)…';
       let login, equipa, jogos, campeonato, arquivo;
       let gvizOk = false;
@@ -416,7 +417,6 @@
         gvizOk = true;
       }catch(e){ console.warn('GViz também falhou', e); }
 
-      // 3) CSV
       if(!gvizOk){
         [login, equipa, jogos, campeonato, arquivo] = await Promise.all([
           fetchCSVSheet('login'),
@@ -442,9 +442,6 @@
       State.dataLoaded = true;
     }
 
-    /* =========================
-       LOGIN
-    ========================== */
     function showLogin(){ document.getElementById('loginModal').classList.remove('hidden'); setTimeout(()=>document.getElementById('user').focus(), 50); }
     function hideLogin(){ document.getElementById('loginModal').classList.add('hidden'); }
 
@@ -488,9 +485,6 @@
       return ok;
     }
 
-    /* =========================
-       NAVIGATION + RENDER
-    ========================== */
     const PAGES = ["Plantel", "Rankings", "Convocatória", "Campeonato", "Arquivo"];
 
     function buildMenu(){
@@ -513,9 +507,29 @@
         ul.querySelectorAll('button').forEach(b => b.classList.remove('bg-white/10'));
         e.currentTarget.classList.add('bg-white/10');
         navigate(e.currentTarget.dataset.page);
+        if(!document.getElementById('navWrap').dataset.mode || document.getElementById('navWrap').dataset.mode === 'desktop') return;
+        closeOverlayMenu();
       }));
 
+      const overlayItems = document.getElementById('overlayMenuItems');
+      overlayItems.innerHTML = '';
+      PAGES.forEach((label, idx) => {
+        const b = document.createElement('button');
+        b.className = 'btn w-full text-left px-3 py-2 rounded-xl border border-white/10 hover:bg-white/10 text-sm';
+        b.dataset.page = label;
+        b.innerHTML = `<span class="inline-flex items-center gap-2">${iconFor(label)}<span>${label}</span></span>`;
+        b.addEventListener('click', () => {
+          document.querySelectorAll('#overlayMenuItems button').forEach(x => x.classList.remove('bg-white/10'));
+          b.classList.add('bg-white/10');
+          navigate(label);
+          closeOverlayMenu();
+        });
+        if(idx===0) b.classList.add('bg-white/10');
+        overlayItems.appendChild(b);
+      });
+
       if (window.lucide) window.lucide.createIcons();
+      setupResponsiveMenu();
     }
 
     function iconFor(label){
@@ -536,6 +550,7 @@
       if(page === 'Convocatória') renderConvocatoria();
       if(page === 'Campeonato') renderCampeonato();
       if(page === 'Arquivo') renderArquivo();
+      if (window.lucide) window.lucide.createIcons();
     }
 
     function reveal(){
@@ -548,9 +563,6 @@
       if (window.lucide) window.lucide.createIcons();
     }
 
-    /* =========================
-       PAGES
-    ========================== */
     function renderPlantel(mode = 'jogadores'){
       const content = document.getElementById('content');
       const btnClass = (active) => `btn px-4 py-2 rounded-xl border border-white/10 ${active? 'bg-white/15':'hover:bg-white/10'}`;
@@ -610,7 +622,6 @@
         return;
       }
 
-      // Botões com rótulo sem o prefixo
       const btns = State.rankings.map(r => {
         const label = String(r).replace(/^\s*(ranking|rahnking)\s*:\s*/i, '');
         return `<button class="btn px-3 py-2 rounded-xl border border-white/10 hover:bg-white/10 text-sm" data-rk="${escapeHtml(r)}">${escapeHtml(label)}</button>`;
@@ -661,41 +672,75 @@
       reveal();
     }
 
+    function getUpcomingJogosSorted(){
+      const today = dayjs().startOf('day');
+      const valid = (State.jogos||[]).map(j => ({...j, _d: tryParseDate(j['data'])})).filter(j => j._d && !j._d.isBefore(today));
+      valid.sort((a,b) => a._d.valueOf() - b._d.valueOf());
+      return valid;
+    }
+
     function renderConvocatoria(){
       const content = document.getElementById('content');
-      if(!State.jogos || !State.jogos.length){
-        content.innerHTML = `<div class="text-white/70">Sem jogos listados na folha <i>jogos</i>.</div>`; return;
+      const upcoming = getUpcomingJogosSorted();
+      if(!upcoming.length){
+        content.innerHTML = `<div class="text-white/70">Sem próximos jogos (a lista omite datas anteriores à data atual).</div>`;
+        return;
       }
 
-      // Ordenar por data (asc)
-      const jogosSorted = [...State.jogos].sort((a,b) => {
-        const da = tryParseDate(a['data']); const db = tryParseDate(b['data']);
-        const ta = da ? da.valueOf() : Infinity; const tb = db ? db.valueOf() : Infinity;
-        return ta - tb;
-      });
-
-      // Botão com data à esquerda e nome à direita
-      const btns = jogosSorted.map(j => {
-        const nome = j['nome'] || '';
-        const dataRotulo = formatDDMMYYYY(j['data']);
-        return `
-          <button class="btn px-3 py-2 rounded-xl border border-white/10 hover:bg-white/10 text-sm min-w-[260px]" data-jogo="${escapeHtml(nome)}">
-            <span class="w-full flex items-center justify-between gap-3">
-              <span class="font-medium text-white/80">${escapeHtml(dataRotulo)}</span>
-              <span class="truncate text-right">${escapeHtml(nome)}</span>
-            </span>
-          </button>`;
-      }).join(' ');
+      const first = upcoming[0];
+      const labelFor = (j) => `(${escapeHtml(formatDDMMYYYY(j['data']))}) ${escapeHtml(j['nome']||'')}`;
 
       content.innerHTML = `
-        <div class="flex flex-wrap items-center gap-2 mb-6">${btns}</div>
+        <div class="flex items-center gap-3 mb-4">
+          <button id="openGamePicker" class="hidden sm:inline-flex btn items-center gap-2 bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl px-3 py-2">
+            <svg data-lucide="chevrons-up-down" class="w-4 h-4"></svg>
+            <span id="openGamePickerLabel" class="truncate max-w-[60vw]">${labelFor(first)}</span>
+          </button>
+
+          <div class="sm:hidden w-full">
+            <label for="mobileGameSelect" class="sr-only">Selecionar jogo</label>
+            <select id="mobileGameSelect" class="w-full glass rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-brand-400">
+              ${upcoming.map(j => `<option value="${escapeHtml(j['nome']||'')}" ${norm(j['nome'])===norm(first['nome'])?'selected':''}>(${escapeHtml(formatDDMMYYYY(j['data']))}) ${escapeHtml(j['nome']||'')}</option>`).join('')}
+            </select>
+          </div>
+        </div>
         <div id="jogoWrap" class="space-y-6"></div>
       `;
 
-      content.querySelectorAll('[data-jogo]').forEach(btn => btn.addEventListener('click', () => showJogo(btn.dataset.jogo)));
+      document.getElementById('openGamePicker').onclick = () => openGamePicker(upcoming, (picked) => {
+        document.getElementById('openGamePickerLabel').textContent = labelFor(picked);
+        showJogo(picked['nome']||'');
+      });
+      const mobileSelect = document.getElementById('mobileGameSelect');
+      mobileSelect.onchange = (e) => showJogo(e.target.value);
 
-      showJogo(jogosSorted[0]['nome']);
+      showJogo(first['nome']);
       reveal();
+    }
+
+    function openGamePicker(list, onPick){
+      const overlay = document.getElementById('gamePickerOverlay');
+      const gpList = document.getElementById('gpList');
+      gpList.innerHTML = '';
+      list.forEach(j => {
+        const line = document.createElement('button');
+        line.className = 'btn whitespace-nowrap w-max text-left px-3 py-2 rounded-xl border border-white/10 hover:bg-white/10 text-sm';
+        line.innerHTML = `(${escapeHtml(formatDDMMYYYY(j['data']))}) ${escapeHtml(j['nome']||'')}`;
+        line.addEventListener('click', () => { closeGamePicker(); onPick(j); });
+        gpList.appendChild(line);
+      });
+      const closeBtn = document.getElementById('gpClose');
+      const bg = document.getElementById('gpBackdrop');
+      closeBtn.onclick = closeGamePicker;
+      bg.onclick = closeGamePicker;
+      function onKey(e){ if(e.key==='Escape') closeGamePicker(); }
+      overlay.dataset.keyHandler = '1';
+      document.addEventListener('keydown', onKey, { once:true });
+      overlay.classList.remove('hidden');
+      if (window.lucide) window.lucide.createIcons();
+      function closeGamePicker(){
+        overlay.classList.add('hidden');
+      }
     }
 
     function showJogo(nome){
@@ -705,9 +750,8 @@
 
       const localLink = j['link para o local'] || j['link'] || '';
       const localTxt = j['local'] || '';
-      const infoTxt = j['texto'] || '';
+      const infoTxt = j['informações'] || j['informacoes'] || j['texto'] || j['observações'] || j['observacoes'] || j['notas'] || '';
 
-      // Galeria 6 imagens (sem título) — 3 por linha (desktop), 3 por coluna (ecrãs estreitos)
       const imgs = [];
       for(let k=1;k<=6;k++){
         const val = j[`imagem ${k}`] || j[`Imagem ${k}`] || j[`img ${k}`] || '';
@@ -715,24 +759,35 @@
       }
       const galeriaHTML = imgs.length ? `
         <div class="grid grid-cols-2 grid-rows-3 grid-flow-col sm:grid-cols-3 sm:grid-rows-2 sm:grid-flow-row gap-3">
-  ${imgs.slice(0,6).map(src => `
-    <div class="rounded-xl overflow-hidden border border-white/10 bg-white/5">
-      <img loading="lazy" src="${src}" alt="" class="w-full h-full object-cover">
-    </div>`).join('')}
-</div>` : '';
+          ${imgs.slice(0,6).map(src => `
+            <div class="rounded-xl overflow-hidden border border-white/10 bg-white/5">
+              <img loading="lazy" src="${src}" alt="" class="w-full h-full object-cover">
+            </div>`).join('')}
+        </div>` : '';
+
+      const hasLink = norm(localLink).length>0;
+      const localHTML = hasLink
+        ? `<a class="underline decoration-dotted hover:text-white break-words" target="_blank" href="${localLink}">${escapeHtml(localTxt)}</a>`
+        : `<span class="break-words">${escapeHtml(localTxt)}</span>`;
 
       box.innerHTML = `
         <div class="glass rounded-2xl p-5">
           <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div class="min-w-0">
-              <h3 class="font-display text-2xl">${escapeHtml(j['nome'])}</h3>
+              <h3 class="font-display text-2xl break-words">${escapeHtml(j['nome'])}</h3>
               <div class="text-white/70 text-sm">${escapeHtml(formatLongPT(j['data']))}</div>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm w-full md:w-auto">
               <div class="glass rounded-xl p-3"><div class="text-white/60 text-xs">Concentração</div><div class="font-medium">${escapeHtml(formatTimeHHMM(j['hora do encontro']))}</div></div>
               <div class="glass rounded-xl p-3"><div class="text-white/60 text-xs">Jogo</div><div class="font-medium">${escapeHtml(formatTimeHHMM(j['hora do jogo']))}</div></div>
-              <div class="glass rounded-xl p-3 col-span-2 md:col-span-3"><div class="text-white/60 text-xs">Local</div><div class="font-medium"><a class="underline decoration-dotted hover:text-white" target="_blank" href="${localLink}">${escapeHtml(localTxt)}</a></div></div>
-              ${norm(infoTxt) ? `<div class="glass rounded-xl p-3 col-span-2 md:col-span-3"><div class="text-white/60 text-xs">Informações</div><div class="font-medium whitespace-pre-line">${escapeHtml(infoTxt)}</div></div>` : ''}
+              <div class="glass rounded-xl p-3 col-span-2 md:col-span-3">
+                <div class="text-white/60 text-xs">Local</div>
+                <div class="font-medium">${localHTML}</div>
+              </div>
+              ${norm(infoTxt) ? `<div class="glass rounded-xl p-3 col-span-2 md:col-span-3">
+                  <div class="text-white/60 text-xs">Informações</div>
+                  <div class="font-medium whitespace-pre-line break-words">${escapeHtml(infoTxt)}</div>
+                </div>` : ''}
             </div>
           </div>
         </div>
@@ -769,8 +824,8 @@
             ${photo ? `<img loading="lazy" src="${photo}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML=avatar('${escapeHtml(name)}')">` : `${avatar(name)}`}
           </div>
           <div class="pt-4">
-            <div class="font-semibold">${escapeHtml(name)} ${number?`<span class='text-white/60 font-normal'>· #${number}</span>`:''}</div>
-            <div class="text-white/70 text-sm">${escapeHtml(pos)}</div>
+            <div class="font-semibold break-words">${escapeHtml(name)} ${number?`<span class='text-white/60 font-normal'>· #${number}</span>`:''}</div>
+            <div class="text-white/70 text-sm break-words">${escapeHtml(pos)}</div>
             <div class="text-white/60 text-xs mt-1">${birth ? `Nasc.: ${escapeHtml(formatDMShortPT(birth))}${age?` (${age})`:''}`:''}</div>
           </div>`;
         grid.appendChild(card);
@@ -795,9 +850,9 @@
       const wrap = document.getElementById('campWrap');
       content.querySelectorAll('[data-item]').forEach(btn => btn.addEventListener('click', () => {
         const url = btn.dataset.url, item = btn.dataset.item;
-        wrap.innerHTML = ''; // não acumula
+        wrap.innerHTML = '';
         const panel = document.createElement('div'); panel.className = 'glass rounded-2xl p-3 md:p-4';
-        panel.innerHTML = `<div class="mb-2 font-medium text-white/80">${escapeHtml(item)}</div><img loading="lazy" src="${url}" alt="${escapeHtml(item)}" class="w-full h-auto rounded-xl border border-white/10" />`;
+        panel.innerHTML = `<div class="mb-2 font-medium text-white/80 break-words">${escapeHtml(item)}</div><img loading="lazy" src="${url}" alt="${escapeHtml(item)}" class="w-full h-auto rounded-xl border border-white/10" />`;
         wrap.appendChild(panel);
         reveal();
       }));
@@ -822,19 +877,56 @@
           }catch(e){ return url; }
         })(link);
         const item = document.createElement('div'); item.className = 'glass rounded-2xl p-4';
-        item.innerHTML = `<div class="font-medium mb-3">${escapeHtml(title)}</div><div class="video-embed"><iframe src="${embed}" title="${escapeHtml(title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`;
+        item.innerHTML = `<div class="font-medium mb-3 break-words">${escapeHtml(title)}</div><div class="video-embed"><iframe src="${embed}" title="${escapeHtml(title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`;
         list.appendChild(item);
       });
       content.innerHTML = ''; content.appendChild(list); reveal();
     }
 
-    /* =========================
-       APP START
-    ========================== */
+    function setupResponsiveMenu(){
+      const navWrap = document.getElementById('navWrap');
+      const menu = document.getElementById('menu');
+      const toggle = document.getElementById('menuToggle');
+
+      function update(){
+        const fits = menu.scrollWidth <= navWrap.clientWidth;
+        if(fits){
+          navWrap.classList.remove('hidden');
+          toggle.classList.add('hidden');
+          navWrap.dataset.mode = 'desktop';
+        }else{
+          navWrap.classList.add('hidden');
+          toggle.classList.remove('hidden');
+          navWrap.dataset.mode = 'collapsed';
+        }
+      }
+
+      update();
+      const ro = new ResizeObserver(update);
+      ro.observe(document.body);
+      window.addEventListener('resize', update);
+      window.addEventListener('orientationchange', update);
+
+      toggle.onclick = openOverlayMenu;
+      document.getElementById('overlayClose').onclick = closeOverlayMenu;
+      document.getElementById('overlayBg').onclick = closeOverlayMenu;
+
+      document.addEventListener('keydown', (e) => {
+        if(e.key === 'Escape') closeOverlayMenu();
+      });
+    }
+
+    function openOverlayMenu(){
+      document.getElementById('overlayMenu').classList.remove('hidden');
+      if (window.lucide) window.lucide.createIcons();
+    }
+    function closeOverlayMenu(){
+      document.getElementById('overlayMenu').classList.add('hidden');
+    }
+
     async function bootstrap(){
       document.getElementById('year').textContent = new Date().getFullYear();
 
-      // Smooth scrolling (opcional)
       if (window.Lenis) {
         const lenis = new Lenis({ lerp: 0.12, smoothWheel: true });
         function raf(time){ lenis.raf(time); requestAnimationFrame(raf); }
@@ -864,4 +956,3 @@
   </script>
 </body>
 </html>
-
