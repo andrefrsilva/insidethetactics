@@ -139,11 +139,13 @@
         </div>
       </div>
 
-      <nav id="navWrap" class="ml-auto overflow-x-hidden">
+      <!-- Nav is ALWAYS hidden on mobile; JS decides overflow behavior on desktop -->
+      <nav id="navWrap" class="ml-auto overflow-x-hidden hidden md:block">
         <ul id="menu" class="flex items-center gap-2 md:gap-3 min-w-max"></ul>
       </nav>
 
-      <button id="menuToggle" aria-label="Abrir menu" class="ml-auto btn hidden items-center gap-2 bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl px-3 py-2">
+      <!-- Hamburger: visible on mobile by default; JS can force-show on desktop if overflow -->
+      <button id="menuToggle" aria-label="Abrir menu" class="ml-auto btn md:hidden inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl px-3 py-2">
         <svg data-lucide="menu" class="w-5 h-5"></svg><span class="hidden sm:inline text-sm">Menu</span>
       </button>
     </div>
@@ -160,6 +162,7 @@
     </div>
   </footer>
 
+  <!-- Overlay menu -->
   <div id="overlayMenu" class="hidden fixed inset-0 z-[65]">
     <div class="absolute inset-0 bg-black/60" id="overlayBg"></div>
     <div class="absolute right-3 top-3 sm:right-6 sm:top-6 w-[88vw] max-w-sm glass-strong rounded-2xl p-3 sm:p-4 shadow-2xl">
@@ -173,6 +176,7 @@
     </div>
   </div>
 
+  <!-- Game picker (desktop) -->
   <div id="gamePickerOverlay" class="hidden fixed inset-0 z-[66]">
     <div class="absolute inset-0 bg-black/60" id="gpBackdrop"></div>
     <div class="absolute left-1/2 top-12 -translate-x-1/2 w-max max-w-[calc(100vw-2rem)] glass-strong rounded-2xl p-3 sm:p-4 shadow-2xl">
@@ -182,7 +186,8 @@
           <svg data-lucide="x" class="w-4 h-4"></svg>
         </button>
       </div>
-      <div id="gpList" class="max-h-[60vh] overflow-y-auto pr-1"></div>
+      <!-- one-per-line list -->
+      <div id="gpList" class="grid grid-cols-1 gap-2 max-h-[60vh] overflow-y-auto pr-1"></div>
     </div>
   </div>
 
@@ -507,8 +512,8 @@
         ul.querySelectorAll('button').forEach(b => b.classList.remove('bg-white/10'));
         e.currentTarget.classList.add('bg-white/10');
         navigate(e.currentTarget.dataset.page);
-        if(!document.getElementById('navWrap').dataset.mode || document.getElementById('navWrap').dataset.mode === 'desktop') return;
-        closeOverlayMenu();
+        const wrap = document.getElementById('navWrap');
+        if(wrap.dataset.mode && wrap.dataset.mode !== 'desktop') closeOverlayMenu();
       }));
 
       const overlayItems = document.getElementById('overlayMenuItems');
@@ -724,7 +729,8 @@
       gpList.innerHTML = '';
       list.forEach(j => {
         const line = document.createElement('button');
-        line.className = 'btn whitespace-nowrap w-max text-left px-3 py-2 rounded-xl border border-white/10 hover:bg-white/10 text-sm';
+        // ONE PER LINE, FULL WIDTH
+        line.className = 'btn block w-full text-left px-3 py-2 rounded-xl border border-white/10 hover:bg-white/10 text-sm';
         line.innerHTML = `(${escapeHtml(formatDDMMYYYY(j['data']))}) ${escapeHtml(j['nome']||'')}`;
         line.addEventListener('click', () => { closeGamePicker(); onPick(j); });
         gpList.appendChild(line);
@@ -738,6 +744,7 @@
       document.addEventListener('keydown', onKey, { once:true });
       overlay.classList.remove('hidden');
       if (window.lucide) window.lucide.createIcons();
+
       function closeGamePicker(){
         overlay.classList.add('hidden');
       }
@@ -860,43 +867,29 @@
       reveal();
     }
 
-    function renderArquivo(){
-      const content = document.getElementById('content');
-      if(!State.arquivo || !State.arquivo.length){ content.innerHTML = '<div class="text-white/70">Sem vídeos na folha <i>arquivo</i>.</div>'; return; }
-      const list = document.createElement('div'); list.className = 'grid grid-cols-1 gap-6';
-      State.arquivo.forEach(r => {
-        const title = r['título'] || r['titulo'] || r['title'] || '';
-        const link = r['link'] || '';
-        const embed = (function(url){
-          if(!url) return '';
-          try{
-            const u = new URL(url);
-            if(u.hostname.includes('youtube.com')){ const id = u.searchParams.get('v'); return id ? `https://www.youtube.com/embed/${id}` : url; }
-            if(u.hostname === 'youtu.be'){ return `https://www.youtube.com/embed${u.pathname}`; }
-            return url;
-          }catch(e){ return url; }
-        })(link);
-        const item = document.createElement('div'); item.className = 'glass rounded-2xl p-4';
-        item.innerHTML = `<div class="font-medium mb-3 break-words">${escapeHtml(title)}</div><div class="video-embed"><iframe src="${embed}" title="${escapeHtml(title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`;
-        list.appendChild(item);
-      });
-      content.innerHTML = ''; content.appendChild(list); reveal();
-    }
-
     function setupResponsiveMenu(){
       const navWrap = document.getElementById('navWrap');
       const menu = document.getElementById('menu');
       const toggle = document.getElementById('menuToggle');
 
       function update(){
+        const isMobile = window.matchMedia('(max-width: 767.98px)').matches; // < md
+        if(isMobile){
+          // Always hamburger on mobile
+          toggle.style.display = 'inline-flex';
+          navWrap.dataset.mode = 'collapsed';
+          return;
+        }
+
+        // Desktop behavior: show tabs if they fit, else show hamburger
         const fits = menu.scrollWidth <= navWrap.clientWidth;
         if(fits){
-          navWrap.classList.remove('hidden');
-          toggle.classList.add('hidden');
+          // hide hamburger (use CSS md:hidden)
+          toggle.style.display = '';
           navWrap.dataset.mode = 'desktop';
         }else{
-          navWrap.classList.add('hidden');
-          toggle.classList.remove('hidden');
+          // force-show hamburger on desktop via inline style (overrides md:hidden)
+          toggle.style.display = 'inline-flex';
           navWrap.dataset.mode = 'collapsed';
         }
       }
@@ -924,7 +917,34 @@
       document.getElementById('overlayMenu').classList.add('hidden');
     }
 
-    async function bootstrap(){
+    function renderArquivo(){
+      const content = document.getElementById('content');
+      if(!State.arquivo || !State.arquivo.length){ content.innerHTML = '<div class="text-white/70">Sem vídeos na folha <i>arquivo</i>.</div>'; return; }
+      const list = document.createElement('div'); list.className = 'grid grid-cols-1 gap-6';
+      State.arquivo.forEach(r => {
+        const title = r['título'] || r['titulo'] || r['title'] || '';
+        const link = r['link'] || '';
+        const embed = (function(url){
+          if(!url) return '';
+          try{
+            const u = new URL(url);
+            if(u.hostname.includes('youtube.com')){ const id = u.searchParams.get('v'); return id ? `https://www.youtube.com/embed/${id}` : url; }
+            if(u.hostname === 'youtu.be'){ return `https://www.youtube.com/embed${u.pathname}`; }
+            return url;
+          }catch(e){ return url; }
+        })(link);
+        const item = document.createElement('div'); item.className = 'glass rounded-2xl p-4';
+        item.innerHTML = `<div class="font-medium mb-3 break-words">${escapeHtml(title)}</div><div class="video-embed"><iframe src="${embed}" title="${escapeHtml(title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`;
+        list.appendChild(item);
+      });
+      content.innerHTML = ''; content.appendChild(list); reveal();
+    }
+
+    function renderConvocatoriaWrapper(){
+      renderConvocatoria();
+    }
+
+    function bootstrap(){
       document.getElementById('year').textContent = new Date().getFullYear();
 
       if (window.Lenis) {
@@ -934,15 +954,19 @@
       }
 
       initLoginUI();
-      try { await fetchExcelLatest(); }
-      catch(err){ console.error(err); document.getElementById('loaderText').textContent = 'Erro ao carregar os dados.'; }
-
-      if(State.dataLoaded && validateStoredLogin()){
-        startApp();
-      } else {
+      fetchExcelLatest().then(() => {
+        if(State.dataLoaded && validateStoredLogin()){
+          startApp();
+        } else {
+          document.getElementById('loader').classList.add('hidden');
+          showLogin();
+        }
+      }).catch(err => {
+        console.error(err);
+        document.getElementById('loaderText').textContent = 'Erro ao carregar os dados.';
         document.getElementById('loader').classList.add('hidden');
         showLogin();
-      }
+      });
     }
 
     function startApp(){
